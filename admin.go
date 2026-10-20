@@ -94,6 +94,7 @@ type previewLink struct {
 
 type view struct {
 	Tab, Title string
+	ProxyAuth  bool // signed in through Authelia: no log-out button
 	Tabs       []struct{ Key, Label string }
 	C          *Config
 	Now        time.Time
@@ -128,18 +129,19 @@ func (s *server) view(r *http.Request, tab string) *view {
 	c := s.cfg.Get()
 	now := s.now()
 	v := &view{
-		Tab:     tab,
-		Title:   "Birthday config",
-		Tabs:    adminTabs,
-		C:       c,
-		Now:     now,
-		Loc:     c.location(),
-		M:       c.momentAt(now),
-		Missing: c.Missing(now),
-		Years:   yearRows(c, now, 6),
-		Stats:   s.stats.Get(),
-		Form:    map[string]string{},
-		Errs:    map[string]string{},
+		Tab:       tab,
+		ProxyAuth: s.auth.proxyUser(r) != "",
+		Title:     "Birthday config",
+		Tabs:      adminTabs,
+		C:         c,
+		Now:       now,
+		Loc:       c.location(),
+		M:         c.momentAt(now),
+		Missing:   c.Missing(now),
+		Years:     yearRows(c, now, 6),
+		Stats:     s.stats.Get(),
+		Form:      map[string]string{},
+		Errs:      map[string]string{},
 	}
 	v.Dates = v.Years[1:4]
 	if ck, err := r.Cookie(forceCookie); err == nil && isState(ck.Value) {
@@ -304,6 +306,15 @@ func isHX(r *http.Request) bool { return r.Header.Get("HX-Request") == "true" }
 
 func (s *server) requireAdmin(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.auth.proxyUser(r) != "" {
+			// Authelia vouched for this request. The cookie lets previews on the
+			// public pages (which aren't behind Authelia) know it's you.
+			if !s.auth.valid(r) {
+				s.auth.login(w, r)
+			}
+			next(w, r)
+			return
+		}
 		if !s.auth.valid(r) {
 			if isHX(r) {
 				w.Header().Set("HX-Redirect", "/config/login")
@@ -318,10 +329,20 @@ func (s *server) requireAdmin(next http.HandlerFunc) http.Handler {
 
 type loginView struct {
 	Enabled bool
+	Proxy   bool // signed in through Authelia, no password form
 	Error   string
 }
 
 func (s *server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
+	if s.auth.proxyUser(r) != "" {
+		s.auth.login(w, r)
+		http.Redirect(w, r, "/config", http.StatusSeeOther)
+		return
+	}
+	if s.auth.password == "" && s.auth.proxyMode() {
+		s.render(w, "login", loginView{Proxy: true})
+		return
+	}
 	if s.auth.valid(r) {
 		http.Redirect(w, r, "/config", http.StatusSeeOther)
 		return
@@ -330,8 +351,8 @@ func (s *server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleLogin(w http.ResponseWriter, r *http.Request) {
-	if !s.auth.enabled() {
-		s.render(w, "login", loginView{})
+	if s.auth.password == "" {
+		s.render(w, "login", loginView{Proxy: s.auth.proxyMode()})
 		return
 	}
 	if s.auth.tooManyFailures(r) {

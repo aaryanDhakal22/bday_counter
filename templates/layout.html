@@ -63,7 +63,7 @@
     <span class="ml-auto"></span>
     <span class="hidden sm:inline">{{template "status" .}}</span>
     <a href="/" target="_blank" class="btn-ghost whitespace-nowrap">Site ↗</a>
-    <form method="post" action="/config/logout"><button class="btn-ghost" title="Log out">🚪</button></form>
+    {{if not .ProxyAuth}}<form method="post" action="/config/logout"><button class="btn-ghost" title="Log out">🚪</button></form>{{end}}
   </div>
   <nav class="mx-auto flex max-w-3xl gap-1.5 overflow-x-auto px-4 py-2.5 text-sm [scrollbar-width:none]">
     {{range .Tabs}}

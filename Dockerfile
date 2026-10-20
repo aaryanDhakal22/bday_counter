@@ -1,7 +1,7 @@
 # Pull:   docker pull ghcr.io/aaryandhakal22/bday_counter:latest  (built by .github/workflows/docker.yml)
 # Build:  docker build -t bday .
-# Run:    docker run -d -p 80:8080 -e ADMIN_PASSWORD=change-me -v bday-data:/data ghcr.io/aaryandhakal22/bday_counter:latest
-# The mic needs HTTPS, so put it behind a TLS proxy (e.g. Caddy) for that part.
+# Run:    see compose.yaml (Traefik + Authelia). Without a proxy, set ADMIN_PASSWORD instead of TRUSTED_PROXIES.
+# The mic needs HTTPS, which Traefik provides.
 FROM golang:1.23-alpine AS build
 
 WORKDIR /src

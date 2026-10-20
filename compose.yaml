@@ -1,0 +1,54 @@
+# Ebu's birthday site on zephyrus-prod (/srv/containers/ebubday), behind Traefik.
+# The site is public; /config goes through Authelia, and the app trusts the
+# Remote-User header Authelia returns only when it comes from Traefik.
+#   docker compose pull && docker compose up -d
+
+name: ebubday
+
+services:
+  ebubday:
+    image: ghcr.io/aaryandhakal22/bday_counter:latest
+    container_name: Ebubday
+    restart: unless-stopped
+    environment:
+      # Traefik's address on the proxy network (same as netpr). If Traefik's IP
+      # changes, update this; check with:
+      #   docker inspect Traefik -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
+      TRUSTED_PROXIES: 172.19.0.2/32
+    volumes:
+      - ebubday-data:/data # config, stats, photos
+    networks:
+      - proxy
+    read_only: true
+    tmpfs:
+      - /tmp # large photo uploads are buffered here
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.services.ebubday.loadbalancer.server.port: "8080"
+
+      # The site itself: public
+      traefik.http.routers.ebubday.rule: Host(`eby-bday.rndhkl.com`)
+      traefik.http.routers.ebubday.entrypoints: websecure
+      traefik.http.routers.ebubday.tls: "true"
+      traefik.http.routers.ebubday.tls.certresolver: cloudflare
+      traefik.http.routers.ebubday.service: ebubday
+
+      # /config: behind Authelia
+      traefik.http.routers.ebubday-config.rule: Host(`eby-bday.rndhkl.com`) && PathPrefix(`/config`)
+      traefik.http.routers.ebubday-config.priority: "100"
+      traefik.http.routers.ebubday-config.entrypoints: websecure
+      traefik.http.routers.ebubday-config.tls: "true"
+      traefik.http.routers.ebubday-config.tls.certresolver: cloudflare
+      traefik.http.routers.ebubday-config.middlewares: authelia@file
+      traefik.http.routers.ebubday-config.service: ebubday
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  ebubday-data:

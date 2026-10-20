@@ -28,7 +28,7 @@ func newTestServer(t *testing.T, now time.Time) (*server, *httptest.Server, *htt
 		t.Fatal(err)
 	}
 	stats, _ := loadStats(filepath.Join(dir, "stats.json"))
-	auth, err := newAuth("hunter2", "", dir)
+	auth, err := newAuth("hunter2", "", dir, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -336,5 +336,45 @@ func TestJPEGOrientation(t *testing.T) {
 	jpg := append(append([]byte{0xFF, 0xD8}, seg...), 0xFF, 0xDA)
 	if o := jpegOrientation(jpg); o != 6 {
 		t.Fatalf("orientation = %d", o)
+	}
+}
+
+func TestProxyAuth(t *testing.T) {
+	s, ts, _ := newTestServer(t, npt("2026-10-19 12:00:00"))
+	s.auth.password = ""
+	asUser := func(user string) (int, string) {
+		req, _ := http.NewRequest("GET", ts.URL+"/config/home", nil)
+		if user != "" {
+			req.Header.Set("Remote-User", user)
+		}
+		res, err := (&http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}).Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		return res.StatusCode, res.Header.Get("Set-Cookie")
+	}
+
+	// The test client connects from 127.0.0.1.
+	s.auth.proxies, _ = parseProxies("10.0.0.0/8")
+	if code, _ := asUser("me"); code != http.StatusSeeOther {
+		t.Fatalf("Remote-User from an untrusted address was accepted: %d", code)
+	}
+	s.auth.proxies, _ = parseProxies("127.0.0.1")
+	if code, _ := asUser(""); code != http.StatusSeeOther {
+		t.Fatalf("no Remote-User should mean no access: %d", code)
+	}
+	code, cookie := asUser("me")
+	if code != 200 || !strings.Contains(cookie, adminCookie) {
+		t.Fatalf("trusted Remote-User: %d %q", code, cookie)
+	}
+	if s.auth.checkPassword("") {
+		t.Fatal("an empty password must never log in")
+	}
+	if _, err := parseProxies("172.19.0.2/32, 10.0.0.1"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := parseProxies("nope"); err == nil {
+		t.Fatal("expected a parse error")
 	}
 }

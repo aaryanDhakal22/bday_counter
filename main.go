@@ -2,7 +2,10 @@
 //
 // Environment:
 //
-//	ADMIN_PASSWORD  password for /config (required to use /config)
+//	ADMIN_PASSWORD  password for /config
+//	TRUSTED_PROXIES instead of a password: comma-separated IPs/CIDRs of the
+//	                reverse proxy whose Remote-User header (e.g. from Authelia)
+//	                unlocks /config
 //	PORT            listen port (default 8080)
 //	DATA_DIR        where config.json, stats.json and photos/ live (default ./data)
 //	SESSION_SECRET  optional; otherwise a random one is kept in DATA_DIR
@@ -57,7 +60,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("stats: %v", err)
 	}
-	auth, err := newAuth(os.Getenv("ADMIN_PASSWORD"), os.Getenv("SESSION_SECRET"), dataDir)
+	proxies, err := parseProxies(os.Getenv("TRUSTED_PROXIES"))
+	if err != nil {
+		log.Fatalf("TRUSTED_PROXIES: %v", err)
+	}
+	auth, err := newAuth(os.Getenv("ADMIN_PASSWORD"), os.Getenv("SESSION_SECRET"), dataDir, proxies)
 	if err != nil {
 		log.Fatalf("auth: %v", err)
 	}
@@ -70,7 +77,7 @@ func main() {
 		s.tmplFS, _ = fs.Sub(templatesEmbed, "templates")
 	}
 	if !auth.enabled() {
-		log.Print("ADMIN_PASSWORD is not set: /config is locked until you set it")
+		log.Print("neither ADMIN_PASSWORD nor TRUSTED_PROXIES is set: /config is locked")
 	}
 
 	addr := ":" + envOr("PORT", "8080")
