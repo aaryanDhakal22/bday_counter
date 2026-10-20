@@ -1,0 +1,108 @@
+{{define "setup"}}{{template "head" .}}
+<body class="min-h-dvh bg-cream font-cute text-ear antialiased">
+<main class="mx-auto max-w-xl px-4 py-8 pb-24">
+  <div class="text-center">
+    <div class="text-5xl">🐻🎂</div>
+    <h1 class="mt-2 font-title text-3xl">Let's set up {{if .C.Nickname}}{{.C.Nickname}}{{else}}her{{end}}'s birthday</h1>
+    <p class="help">Four quick steps. You can change everything later in /config.</p>
+  </div>
+  {{template "wizard" .}}
+  <p class="mt-6 text-center text-sm"><a class="underline" href="/config/home">Skip for now</a></p>
+</main>
+{{template "bottom" .}}{{end}}
+
+
+{{define "wizard-error"}}{{with .}}<p class="mt-1 text-sm font-semibold text-rose">{{.}}</p>{{end}}{{end}}
+
+
+{{define "wizard"}}
+<div id="wizard" class="mt-6">
+  <ol class="mb-4 flex items-center justify-center gap-2" aria-label="Progress">
+    {{range seq 4}}
+    <li class="grid size-8 place-items-center rounded-full text-sm font-bold {{if lt . $.Step}}bg-ear text-cream{{else if eq . $.Step}}bg-rose text-white ring-4 ring-cheek/50{{else}}bg-white ring-1 ring-cheek{{end}}">{{if lt . $.Step}}✓{{else}}{{.}}{{end}}</li>
+    {{end}}
+  </ol>
+
+  {{if eq .Step 1}}
+  <form method="post" action="/config/setup/1" hx-post="/config/setup/1" hx-target="#wizard" hx-swap="outerHTML" class="card space-y-4">
+    <h2 class="font-title text-xl">1 · Her &amp; you</h2>
+    <label class="block"><span class="label">What do you call her?</span>
+      <input class="field" name="nickname" value="{{index .Form "nickname"}}" placeholder="Mutu" maxlength="40" required>
+      {{template "wizard-error" index .Errs "nickname"}}</label>
+    <label class="block"><span class="label">Your name (to sign the letter)</span>
+      <input class="field" name="signOff" value="{{index .Form "signOff"}}" placeholder="Your name" maxlength="40" required>
+      {{template "wizard-error" index .Errs "signOff"}}</label>
+    <label class="block"><span class="label">Her birth year (BS)</span>
+      <input class="field" type="number" inputmode="numeric" name="birthBSYear" value="{{index .Form "birthBSYear"}}" placeholder="2058" required>
+      <p class="help">For “{age} barsa pugyau” on her birthday.</p>
+      {{template "wizard-error" index .Errs "birthBSYear"}}</label>
+    <div class="flex justify-end"><button class="btn">Next →</button></div>
+  </form>
+
+  {{else if eq .Step 2}}
+  <form method="post" action="/config/setup/2" hx-post="/config/setup/2" hx-target="#wizard" hx-swap="outerHTML" class="card space-y-4">
+    <h2 class="font-title text-xl">2 · Her birthday</h2>
+    <p class="text-sm">Pick the Nepali date. I'll work out the English date every year.</p>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="block"><span class="label">Month</span>
+        <select class="field" name="bsMonth" hx-get="/config/setup/dates" hx-include="closest form" hx-target="#date-preview" hx-swap="outerHTML" hx-trigger="change">
+          {{range $i, $m := months}}<option value="{{add $i 1}}"{{if eq (print (add $i 1)) (index $.Form "bsMonth")}} selected{{end}}>{{$m}}</option>{{end}}
+        </select>
+        {{template "wizard-error" index .Errs "bsMonth"}}</label>
+      <label class="block"><span class="label">Day</span>
+        <input class="field" type="number" inputmode="numeric" min="1" max="32" name="bsDay" value="{{index .Form "bsDay"}}" required
+               hx-get="/config/setup/dates" hx-include="closest form" hx-target="#date-preview" hx-swap="outerHTML" hx-trigger="input changed delay:400ms">
+        {{template "wizard-error" index .Errs "bsDay"}}</label>
+    </div>
+    <label class="block"><span class="label">Timezone</span>
+      <input class="field" list="tz-list" name="timezone" value="{{index .Form "timezone"}}" required
+             hx-get="/config/setup/dates" hx-include="closest form" hx-target="#date-preview" hx-swap="outerHTML" hx-trigger="change">
+      <datalist id="tz-list">{{range timezones}}<option value="{{.}}"></option>{{end}}</datalist>
+      <p class="help">The birthday page opens at 00:00 in this timezone. Asia/Kathmandu = Nepal time.</p>
+      {{template "wizard-error" index .Errs "timezone"}}</label>
+    {{template "date-preview" .}}
+    <div class="flex justify-between"><a class="btn-ghost" href="/config/setup?step=1" hx-get="/config/setup?step=1" hx-target="#wizard" hx-swap="outerHTML">← Back</a><button class="btn">Next →</button></div>
+  </form>
+
+  {{else if eq .Step 3}}
+  <form method="post" action="/config/setup/3" hx-post="/config/setup/3" hx-target="#wizard" hx-swap="outerHTML" class="card space-y-4">
+    <h2 class="font-title text-xl">3 · The surprises 🔒</h2>
+    <p class="text-sm">She can't see these until her birthday starts.</p>
+    <label class="block"><span class="label">Birthday letter 💌</span>
+      <textarea class="field" name="letter" rows="9" placeholder="Mero pyaro {{.C.Nickname}}, …" required>{{index .Form "letter"}}</textarea>
+      <p class="help">It types itself out on her birthday and gets signed with your name.</p>
+      {{template "wizard-error" index .Errs "letter"}}</label>
+    <label class="block"><span class="label">What's inside the gift box? 🎁</span>
+      <textarea class="field" name="gift" rows="3" placeholder="Coupon: one fancy dinner date, my treat 🍝" required>{{index .Form "gift"}}</textarea>
+      {{template "wizard-error" index .Errs "gift"}}</label>
+    <div class="flex justify-between"><a class="btn-ghost" href="/config/setup?step=2" hx-get="/config/setup?step=2" hx-target="#wizard" hx-swap="outerHTML">← Back</a><button class="btn">Next →</button></div>
+  </form>
+
+  {{else if eq .Step 4}}
+  <form method="post" action="/config/setup/4" hx-post="/config/setup/4" hx-target="#wizard" hx-swap="outerHTML" class="card space-y-4">
+    <h2 class="font-title text-xl">4 · Notes &amp; reasons</h2>
+    <p class="text-sm">I wrote some to start you off. Make them yours, one per line.</p>
+    <label class="block"><span class="label">Daily envelope notes (at least 3)</span>
+      <textarea class="field" name="envelope.notes" rows="8">{{index .Form "envelope.notes"}}</textarea>
+      {{template "wizard-error" index .Errs "envelope.notes"}}</label>
+    <label class="block"><span class="label">Reasons I love you (at least 5)</span>
+      <textarea class="field" name="reasons" rows="10">{{index .Form "reasons"}}</textarea>
+      {{template "wizard-error" index .Errs "reasons"}}</label>
+    <div class="flex justify-between"><a class="btn-ghost" href="/config/setup?step=3" hx-get="/config/setup?step=3" hx-target="#wizard" hx-swap="outerHTML">← Back</a><button class="btn">Finish 🎉</button></div>
+  </form>
+
+  {{else}}
+  <div class="card space-y-4 text-center">
+    <div class="text-6xl">🎉</div>
+    <h2 class="font-title text-2xl">All set!</h2>
+    <p>Her birthday is <b>{{monthName .C.BSMonth}} {{.C.BSDay}}</b>. This time that's <b>{{.M.Cycle.Date.Format "Mon, Jan 2 2006"}}</b>, starting at 00:00 {{.C.Timezone}}.</p>
+    {{if .Missing}}<p class="text-sm text-rose">Still missing: {{range $i, $m := .Missing}}{{if $i}}, {{end}}{{$m.Label}}{{end}}</p>{{end}}
+    <div class="flex flex-wrap justify-center gap-2">
+      <a class="btn" href="/config/preview">Preview the site 👀</a>
+      <a class="btn-ghost" href="/config/photos">Add photos 📸</a>
+      <a class="btn-ghost" href="/config/text">Edit all the text ✍️</a>
+    </div>
+  </div>
+  {{end}}
+</div>
+{{end}}

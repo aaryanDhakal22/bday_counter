@@ -1,0 +1,140 @@
+{{define "head"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{{.Title}} · Mutu's birthday</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Patua+One&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3"></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.11/dist/htmx.min.js"></script>
+<style type="text/tailwindcss">
+  @theme {
+    --font-cute: "Fredoka", ui-rounded, system-ui, sans-serif;
+    --font-title: "Patua One", Georgia, serif;
+    --color-cream: #fff8f3;
+    --color-blush: #fde7e4;
+    --color-cheek: #f1b4af;
+    --color-rose: #e0736b;
+    --color-ear: #4c2721;
+    --color-cocoa: #7a4b42;
+    --color-mint: #cdeee0;
+  }
+</style>
+<style>
+  body { -webkit-tap-highlight-color: transparent; }
+  .card { background: #fff; border-radius: 1.5rem; padding: 1.25rem; box-shadow: 0 6px 0 #f1b4af55, 0 1px 3px #4c272112; border: 1px solid #f1b4af66; }
+  .label { display: block; font-size: .875rem; font-weight: 600; color: #7a4b42; }
+  .help { font-size: .8rem; color: #7a4b42b3; margin-top: .15rem; }
+  .field { margin-top: .35rem; width: 100%; border-radius: .9rem; border: 1px solid #f1b4af; background: #fff8f3; padding: .55rem .8rem; color: #4c2721; font: inherit; }
+  .field:focus { outline: none; box-shadow: 0 0 0 4px #f1b4af66; border-color: #e0736b; }
+  .btn { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; padding: .55rem 1.1rem; font-weight: 600; background: #e0736b; color: #fff; box-shadow: 0 3px 0 #b5524b; transition: transform .1s; }
+  .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #b5524b; }
+  .btn-ghost { display: inline-flex; align-items: center; gap: .3rem; border-radius: 999px; padding: .35rem .8rem; font-size: .875rem; border: 1px solid #f1b4af; background: #fff; color: #4c2721; }
+  .btn-ghost:hover { background: #fde7e4; }
+  .icon-btn { width: 2rem; height: 2rem; border-radius: 999px; display: inline-grid; place-items: center; border: 1px solid #f1b4af88; background: #fff; flex-shrink: 0; }
+  .icon-btn:hover { background: #fde7e4; }
+  .chip { display: inline-flex; align-items: center; gap: .3rem; border-radius: 999px; padding: .15rem .65rem; font-size: .75rem; font-weight: 600; }
+  .switch { appearance: none; width: 2.75rem; height: 1.6rem; border-radius: 999px; background: #e9d5d2; position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0; }
+  .switch::after { content: ""; position: absolute; top: .2rem; left: .2rem; width: 1.2rem; height: 1.2rem; border-radius: 999px; background: #fff; box-shadow: 0 1px 3px #0003; transition: transform .2s; }
+  .switch:checked { background: #e0736b; }
+  .switch:checked::after { transform: translateX(1.15rem); }
+  .auto-grow { field-sizing: content; min-height: 2.6rem; max-height: 22rem; }
+  .htmx-indicator { display: none; }
+  .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display: inline; }
+  #toast { transition: opacity .25s, transform .25s; }
+  details.card > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: .5rem; }
+  details.card > summary::-webkit-details-marker { display: none; }
+  details.card > summary::after { content: "▾"; margin-left: auto; transition: transform .2s; color: #7a4b42; }
+  details.card[open] > summary::after { transform: rotate(180deg); }
+  #toast.hide { opacity: 0; transform: translate(-50%, 1rem); pointer-events: none; }
+</style>
+</head>
+{{end}}
+
+{{define "top"}}{{template "head" .}}
+<body class="min-h-dvh bg-cream font-cute text-ear antialiased">
+<header class="sticky top-0 z-30 border-b border-cheek/40 bg-cream/90 backdrop-blur">
+  <div class="mx-auto flex max-w-3xl items-center gap-2 px-4 pt-3">
+    <a href="/config/home" class="whitespace-nowrap font-title text-xl tracking-wide">💗 Birthday config</a>
+    <span class="ml-auto"></span>
+    <span class="hidden sm:inline">{{template "status" .}}</span>
+    <a href="/" target="_blank" class="btn-ghost whitespace-nowrap">Site ↗</a>
+    <form method="post" action="/config/logout"><button class="btn-ghost" title="Log out">🚪</button></form>
+  </div>
+  <nav class="mx-auto flex max-w-3xl gap-1.5 overflow-x-auto px-4 py-2.5 text-sm [scrollbar-width:none]">
+    {{range .Tabs}}
+      <a href="/config/{{.Key}}" class="shrink-0 rounded-full px-3 py-1.5 font-medium {{if eq .Key $.Tab}}bg-ear text-cream{{else}}bg-white ring-1 ring-cheek/50 hover:bg-blush{{end}}">{{.Label}}</a>
+    {{end}}
+  </nav>
+</header>
+{{end}}
+
+{{define "bottom"}}
+<div id="toast" class="hide fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full px-4 py-2 text-sm font-semibold shadow-lg"></div>
+<script>
+  (function () {
+    const toast = document.getElementById('toast');
+    let timer;
+    function show(msg, bad) {
+      toast.textContent = msg;
+      toast.className = 'fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full px-4 py-2 text-sm font-semibold shadow-lg ' +
+        (bad ? 'bg-rose text-white' : 'bg-ear text-cream');
+      clearTimeout(timer);
+      timer = setTimeout(() => toast.classList.add('hide'), bad ? 3500 : 1300);
+    }
+    document.body.addEventListener('saved', e => show(e.detail.value || 'Saved ✓'));
+    document.body.addEventListener('saveError', e => show(e.detail.value || 'Could not save', true));
+    document.body.addEventListener('htmx:responseError', e => show('Server error ' + e.detail.xhr.status, true));
+    document.body.addEventListener('htmx:sendError', () => show('Offline? Could not reach the server', true));
+  })();
+</script>
+</body>
+</html>
+{{end}}
+
+{{define "page"}}{{template "top" .}}
+<main class="mx-auto max-w-3xl space-y-6 px-4 py-6 pb-24">
+  {{template "banners" .}}
+  {{if eq .Tab "home"}}{{template "tab-home" .}}
+  {{else if eq .Tab "birthday"}}{{template "tab-birthday" .}}
+  {{else if eq .Tab "preview"}}{{template "tab-preview" .}}
+  {{else if eq .Tab "settings"}}{{template "tab-settings" .}}
+  {{else if eq .Tab "text"}}{{template "tab-text" .}}
+  {{else if eq .Tab "photos"}}{{template "tab-photos" .}}
+  {{else if eq .Tab "stats"}}{{template "tab-stats" .}}
+  {{end}}
+</main>
+{{template "bottom" .}}{{end}}
+
+{{define "status"}}
+<a id="status" href="/config/preview" hx-get="/config/fragment/status" hx-trigger="datesChanged from:body" hx-swap="outerHTML"
+   class="chip {{if eq .M.State "during"}}bg-rose text-white{{else if eq .M.State "post"}}bg-mint text-ear{{else}}bg-blush text-ear{{end}}">
+  {{stateEmoji .M.State}} {{stateName .M.State}}{{if .C.ForceState}} · forced{{end}}
+</a>
+{{end}}
+
+{{define "banners"}}
+<div id="banners" hx-get="/config/fragment/banners" hx-trigger="missingChanged from:body" hx-swap="outerHTML" class="space-y-3 empty:hidden">
+  {{if .C.ForceState}}
+  <div class="rounded-2xl border-2 border-rose bg-rose/10 p-4">
+    <p class="font-semibold text-rose">⚠️ Everyone sees the “{{stateName .C.ForceState}}” page right now, including her.</p>
+    <p class="mt-1 text-sm">Turn it off under <a class="underline" href="/config/preview">Preview → For everyone</a> when you're done.</p>
+  </div>
+  {{end}}
+  {{if .Missing}}
+  <div class="rounded-2xl border border-cheek bg-blush/70 p-4">
+    <p class="font-semibold">🧸 A few things still need filling in:</p>
+    <ul class="mt-2 space-y-1 text-sm">
+      {{range .Missing}}
+      <li class="flex items-center gap-2">• {{.Label}}
+        <a class="ml-auto shrink-0 underline" href="/config/setup?step={{.Step}}">fix</a></li>
+      {{end}}
+    </ul>
+  </div>
+  {{end}}
+</div>
+{{end}}

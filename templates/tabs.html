@@ -1,0 +1,267 @@
+{{define "tab-home"}}
+<section class="card">
+  <div class="flex items-start gap-4">
+    <div class="text-5xl leading-none">{{stateEmoji .M.State}}</div>
+    <div class="min-w-0">
+      <p class="text-sm text-cocoa">Right now she sees</p>
+      <h1 class="font-title text-2xl">{{stateName .M.State}}{{if .C.ForceState}} <span class="chip bg-rose text-white align-middle">forced: {{stateName .C.ForceState}}</span>{{end}}</h1>
+      {{if eq .M.State "pre"}}<p class="mt-1">Birthday in <b>{{until .Now .M.Cycle.Start}}</b></p>
+      {{else if eq .M.State "during"}}<p class="mt-1">🎉 It's her birthday! Ends in <b>{{until .Now .M.Cycle.End}}</b></p>
+      {{else}}<p class="mt-1">Teasing week ends in <b>{{until .Now .M.Cycle.PostEnd}}</b>, then next year's countdown starts.</p>{{end}}
+    </div>
+  </div>
+  <dl class="mt-5 grid gap-2 text-sm sm:grid-cols-3">
+    <div class="rounded-2xl bg-blush/60 p-3">
+      <dt class="text-cocoa">Birthday</dt>
+      <dd class="font-semibold">{{monthName .C.BSMonth}} {{.C.BSDay}}, {{.M.Cycle.BSYear}} BS</dd>
+      <dd>{{.M.Cycle.Date.Format "Mon, Jan 2 2006"}}{{if .M.Cycle.Overridden}} ✎{{end}}</dd>
+    </div>
+    <div class="rounded-2xl bg-blush/60 p-3">
+      <dt class="text-cocoa">Starts</dt>
+      <dd class="font-semibold">{{(inLoc .M.Cycle.Start .Loc).Format "Jan 2, 15:04"}}</dd>
+      <dd>{{.C.Timezone}}</dd>
+    </div>
+    <div class="rounded-2xl bg-blush/60 p-3">
+      <dt class="text-cocoa">Teasing until</dt>
+      <dd class="font-semibold">{{(inLoc .M.Cycle.PostEnd .Loc).Format "Jan 2, 15:04"}}</dd>
+      <dd>{{.C.TeaseDays}} days after</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="card">
+  <div class="flex items-center gap-2">
+    <h2 class="font-title text-xl">Peek at each page</h2>
+    <a href="/config/preview" class="btn-ghost ml-auto">Phone preview →</a>
+  </div>
+  <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+    <a href="/?state=pre" target="_blank" class="rounded-2xl bg-cream p-3 ring-1 ring-cheek/50 hover:bg-blush"><div class="text-3xl">⏳</div><div class="text-sm font-semibold">Countdown</div></a>
+    <a href="/?state=during" target="_blank" class="rounded-2xl bg-cream p-3 ring-1 ring-cheek/50 hover:bg-blush"><div class="text-3xl">🎂</div><div class="text-sm font-semibold">Birthday</div></a>
+    <a href="/?state=post" target="_blank" class="rounded-2xl bg-cream p-3 ring-1 ring-cheek/50 hover:bg-blush"><div class="text-3xl">😌</div><div class="text-sm font-semibold">Teasing week</div></a>
+  </div>
+  <p class="help mt-2">These links only work for you (logged in). She always sees the real date.</p>
+</section>
+
+<section class="card">
+  <div class="flex items-center gap-2">
+    <h2 class="font-title text-xl">Her lately</h2>
+    <a href="/config/stats" class="btn-ghost ml-auto">All stats →</a>
+  </div>
+  <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+    <div class="rounded-2xl bg-cream p-3"><div class="text-2xl font-semibold">{{index .Stats.Counters "visit"}}</div><div class="text-xs text-cocoa">visits</div></div>
+    <div class="rounded-2xl bg-cream p-3"><div class="text-2xl font-semibold">{{index .Stats.Counters "hug"}}</div><div class="text-xs text-cocoa">hugs</div></div>
+    <div class="rounded-2xl bg-cream p-3"><div class="text-2xl font-semibold">{{index .Stats.Counters "no"}}</div><div class="text-xs text-cocoa">No dodges</div></div>
+  </div>
+  <p class="mt-3 text-sm">Last visit: <b>{{since .Stats.LastVisit .Now}}</b></p>
+  {{with .Stats.Wishes}}{{with index . 0}}<p class="mt-2 rounded-2xl bg-blush/60 p-3 text-sm">🏮 Latest wish: “{{.Text}}”</p>{{end}}{{end}}
+</section>
+{{end}}
+
+
+{{define "tab-birthday"}}
+<section class="card space-y-4">
+  <h1 class="font-title text-xl">Her &amp; you</h1>
+  <label class="block">
+    <span class="label">Her nickname</span>
+    <input class="field" name="value" value="{{.C.Nickname}}" maxlength="40" hx-put="/config/field/nickname" hx-trigger="input changed delay:700ms" hx-swap="none">
+    <p class="help">Shows up wherever a text says {name}.</p>
+  </label>
+  <label class="block">
+    <span class="label">Your name</span>
+    <input class="field" name="value" value="{{.C.SignOff}}" maxlength="40" hx-put="/config/field/signOff" hx-trigger="input changed delay:700ms" hx-swap="none">
+    <p class="help">Signs the letter and the footer ({from}).</p>
+  </label>
+  <label class="block">
+    <span class="label">Her birth year (BS)</span>
+    <input class="field" type="number" inputmode="numeric" name="value" value="{{if .C.BirthBSYear}}{{.C.BirthBSYear}}{{end}}" placeholder="2058" hx-put="/config/field/birthBSYear" hx-trigger="input changed delay:700ms" hx-swap="none">
+    <p class="help">Used for “{age} barsa pugyau” and the Budhi meter.</p>
+  </label>
+</section>
+
+<section class="card space-y-4">
+  <h2 class="font-title text-xl">Birthday date</h2>
+  <div class="grid grid-cols-2 gap-3">
+    <label class="block">
+      <span class="label">Nepali month</span>
+      <select class="field" name="value" hx-put="/config/field/bsMonth" hx-trigger="change" hx-swap="none">
+        {{range $i, $m := months}}<option value="{{add $i 1}}"{{if eq (add $i 1) $.C.BSMonth}} selected{{end}}>{{$m}}</option>{{end}}
+      </select>
+    </label>
+    <label class="block">
+      <span class="label">Day</span>
+      <input class="field" type="number" inputmode="numeric" min="1" max="32" name="value" value="{{.C.BSDay}}" hx-put="/config/field/bsDay" hx-trigger="input changed delay:700ms" hx-swap="none">
+    </label>
+  </div>
+  <label class="block">
+    <span class="label">Timezone</span>
+    <input class="field" list="tz-list" name="value" value="{{.C.Timezone}}" hx-put="/config/field/timezone" hx-trigger="change" hx-swap="none">
+    <datalist id="tz-list">{{range timezones}}<option value="{{.}}"></option>{{end}}</datalist>
+    <p class="help">The birthday starts at 00:00 here. Asia/Kathmandu = Nepal time.</p>
+  </label>
+  <label class="block">
+    <span class="label">Teasing days after the birthday</span>
+    <input class="field" type="number" inputmode="numeric" min="1" max="60" name="value" value="{{.C.TeaseDays}}" hx-put="/config/field/teaseDays" hx-trigger="input changed delay:700ms" hx-swap="none">
+    <p class="help">“SAKYO BIRTHDAY” shows for this many days, then the next countdown starts.</p>
+  </label>
+</section>
+
+{{template "years" .}}
+{{end}}
+
+
+{{define "tab-preview"}}
+{{template "force-panel" .}}
+
+<section class="card">
+  <h2 class="font-title text-xl">Phone preview</h2>
+  <p class="help">Time travel for you only. Your clicks here don't count in her stats.</p>
+  <div class="mt-3 flex flex-wrap gap-2" id="preview-buttons">
+    {{range .Previews}}<button type="button" class="btn-ghost" data-q="{{.Query}}" title="{{.Help}}">{{.Label}}</button>{{end}}
+  </div>
+  <form id="at-form" class="mt-3 flex flex-wrap items-center gap-2">
+    <input type="datetime-local" step="1" id="at" class="field !mt-0 !w-auto" aria-label="Preview date and time">
+    <button class="btn-ghost">Go to this time</button>
+  </form>
+  <label class="mt-3 flex items-center gap-2 text-sm">
+    <input type="checkbox" id="env-again" class="switch"> Show the envelope every time
+  </label>
+  <div class="mt-5 flex justify-center">
+    <div class="rounded-[2.75rem] bg-ear p-2.5 shadow-xl">
+      <iframe id="phone" src="/" title="Phone preview" allow="microphone; autoplay"
+              class="block h-[740px] max-h-[80vh] w-[360px] max-w-[78vw] rounded-[2.25rem] bg-cream"></iframe>
+    </div>
+  </div>
+  <p class="mt-3 text-center"><a id="open-tab" href="/" target="_blank" class="btn-ghost">Open in a new tab ↗</a></p>
+</section>
+<script>
+  (function () {
+    const phone = document.getElementById('phone');
+    const openTab = document.getElementById('open-tab');
+    const again = document.getElementById('env-again');
+    let q = '';
+    function go() {
+      const parts = [q, again.checked ? 'envelope=again' : ''].filter(Boolean);
+      const url = '/' + (parts.length ? '?' + parts.join('&') : '');
+      phone.src = url;
+      openTab.href = url;
+    }
+    document.getElementById('preview-buttons').addEventListener('click', e => {
+      const b = e.target.closest('button[data-q]');
+      if (b) { q = b.dataset.q; go(); }
+    });
+    document.getElementById('at-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const v = document.getElementById('at').value;
+      if (v) { q = 'at=' + encodeURIComponent(v); go(); }
+    });
+    again.addEventListener('change', go);
+  })();
+</script>
+{{end}}
+
+
+{{define "tab-settings"}}
+{{range .FlagSections}}
+<section class="card">
+  <h2 class="font-title text-xl">{{.Name}}</h2>
+  <div class="mt-2 divide-y divide-cheek/30">
+    {{range .Flags}}
+    <label class="flex items-center gap-3 py-2.5">
+      <span class="flex-1"><span class="font-medium">{{.Def.Label}}</span>{{if .Def.Help}}<span class="help block">{{.Def.Help}}</span>{{end}}</span>
+      <input type="checkbox" class="switch" name="value"{{if .On}} checked{{end}} hx-put="/config/flag/{{.Def.Key}}" hx-trigger="change" hx-swap="none" aria-label="{{.Def.Label}}">
+    </label>
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+{{range .NumSections}}
+<section class="card">
+  <h2 class="font-title text-xl">{{.Name}}</h2>
+  <div class="mt-2 grid gap-4 sm:grid-cols-2">
+    {{range .Nums}}
+    <label class="block">
+      <span class="label">{{.Def.Label}}</span>
+      <span class="flex items-center gap-2">
+        <input class="field" type="number" name="value" value="{{num .Value}}" min="{{num .Def.Min}}" max="{{num .Def.Max}}" step="{{num .Def.Step}}" hx-put="/config/num/{{.Def.Key}}" hx-trigger="input changed delay:700ms" hx-swap="none">
+        {{if .Def.Unit}}<span class="mt-1 shrink-0 text-sm text-cocoa">{{.Def.Unit}}</span>{{end}}
+      </span>
+      {{if .Def.Help}}<p class="help">{{.Def.Help}}</p>{{end}}
+    </label>
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+<section class="card">
+  <h2 class="font-title text-xl">Spam guard 😤</h2>
+  <p class="help">If she taps something more than <b>max taps</b> within <b>seconds</b>, the bear gets grumpy and that toy locks for a bit. Then the bear forgives her.</p>
+  <div class="mt-3 space-y-3">
+    {{range .Spam}}
+    <div class="rounded-2xl bg-cream p-3">
+      <p class="font-medium">{{.Label}}</p>
+      <div class="mt-1 grid grid-cols-3 gap-2 text-sm">
+        <label>max taps<input class="field" type="number" name="value" value="{{num .Max.Value}}" min="{{num .Max.Def.Min}}" max="{{num .Max.Def.Max}}" step="1" hx-put="/config/num/{{.Max.Def.Key}}" hx-trigger="input changed delay:700ms" hx-swap="none"></label>
+        <label>within (s)<input class="field" type="number" name="value" value="{{num .Window.Value}}" min="{{num .Window.Def.Min}}" max="{{num .Window.Def.Max}}" step="0.5" hx-put="/config/num/{{.Window.Def.Key}}" hx-trigger="input changed delay:700ms" hx-swap="none"></label>
+        <label>grumpy for (s)<input class="field" type="number" name="value" value="{{num .Lock.Value}}" min="{{num .Lock.Def.Min}}" max="{{num .Lock.Def.Max}}" step="0.5" hx-put="/config/num/{{.Lock.Def.Key}}" hx-trigger="input changed delay:700ms" hx-swap="none"></label>
+      </div>
+    </div>
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+
+{{define "tab-text"}}
+<section class="card text-sm">
+  <p>Everything here saves as you type. In any text you can use:</p>
+  <ul class="mt-2 space-y-1">
+    <li><code class="rounded bg-blush px-1.5">{name}</code> → {{.C.Nickname}} &nbsp;·&nbsp; <code class="rounded bg-blush px-1.5">{NAME}</code> → in capitals</li>
+    <li><code class="rounded bg-blush px-1.5">{from}</code> → {{if .C.SignOff}}{{.C.SignOff}}{{else}}your name{{end}}</li>
+    <li><code class="rounded bg-blush px-1.5">{age}</code> → how old she turns</li>
+  </ul>
+  <p class="mt-2"><span class="chip bg-blush">🔒 surprise</span> means it stays hidden from her until her birthday starts.</p>
+</section>
+{{range $i, $sec := .Sections}}
+<details class="card"{{if eq $i 0}} open{{end}}>
+  <summary><h2 class="font-title text-xl">{{.Name}}</h2><span class="text-sm text-cocoa">{{len .Texts}} texts{{if .Lists}} · {{len .Lists}} lists{{end}}</span></summary>
+  <div class="mt-4 space-y-4">
+  {{range .Texts}}
+  <label class="block">
+    <span class="label">{{.Def.Label}}
+      {{if eq .Def.Stage "during"}}<span class="chip bg-blush">🔒 surprise</span>{{end}}
+      {{if .Def.Required}}<span class="chip bg-rose/15 text-rose">required</span>{{end}}
+    </span>
+    {{if .Def.Multiline}}
+    <textarea class="field auto-grow" rows="{{lines .Value}}" name="value" hx-put="/config/text/{{.Def.Key}}" hx-trigger="input changed delay:800ms" hx-swap="none">{{.Value}}</textarea>
+    {{else}}
+    <input class="field" name="value" value="{{.Value}}" hx-put="/config/text/{{.Def.Key}}" hx-trigger="input changed delay:800ms" hx-swap="none">
+    {{end}}
+    {{if .Def.Help}}<p class="help">{{.Def.Help}}</p>{{end}}
+  </label>
+  {{end}}
+  {{range .Lists}}{{template "list" .}}{{end}}
+  {{if eq .Name "Toys"}}{{template "milestones" $}}{{end}}
+  </div>
+</details>
+{{end}}
+{{end}}
+
+
+{{define "tab-photos"}}
+<section class="card">
+  <h1 class="font-title text-xl">Add photos 📸</h1>
+  <form class="mt-3 space-y-3" hx-post="/config/photos" hx-encoding="multipart/form-data" hx-target="#photos" hx-swap="outerHTML" hx-disabled-elt="find button" hx-on::after-request="if (event.detail.successful) this.reset()">
+    <input type="file" name="photos" accept="image/jpeg,image/png,image/gif,image/webp" multiple required
+           class="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-blush file:px-4 file:py-2 file:font-semibold file:text-ear">
+    <input name="caption" class="field" placeholder="Caption for these (optional, you can edit each one later)">
+    <button class="btn">Upload</button>
+    <span class="htmx-indicator text-sm text-cocoa">Uploading… 🐻</span>
+  </form>
+  <p class="help mt-2">Big phone photos are shrunk and rotated upright automatically. iPhone HEIC photos need converting to JPG first.</p>
+</section>
+{{template "photos-grid" .}}
+{{end}}
+
+
+{{define "tab-stats"}}{{template "stats-panel" .}}{{end}}

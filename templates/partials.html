@@ -1,0 +1,195 @@
+{{define "years"}}
+<section id="years" class="card" hx-get="/config/fragment/years" hx-trigger="datesChanged from:body" hx-swap="outerHTML">
+  <h2 class="font-title text-xl">Year by year</h2>
+  <p class="help">Converted from the Nepali calendar. If a year doesn't match the patro, set the right AD date. The override wins.</p>
+  <div class="mt-3 space-y-2">
+    {{range .Years}}
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl p-3 {{if .Current}}bg-blush ring-2 ring-cheek{{else}}bg-cream{{end}}">
+      <div class="min-w-0 flex-1">
+        <p class="font-semibold"><span class="whitespace-nowrap">{{.Label}}</span>
+          {{if .Current}}<span class="chip bg-ear text-cream">current</span>{{end}}
+          {{if .Overridden}}<span class="chip bg-rose text-white">override</span>{{end}}
+          {{if .Estimated}}<span class="chip bg-yellow-100 text-yellow-900">estimated, please check</span>{{end}}
+        </p>
+        <p class="text-sm">{{.Date}}{{if .Overridden}} <span class="text-cocoa">(table says {{.Computed}})</span>{{end}}</p>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <input type="date" class="field !mt-0 !w-auto !py-1.5 text-sm" name="value" value="{{.Override}}" aria-label="Override date for {{.BSYear}} BS"
+               hx-put="/config/override/{{.BSYear}}" hx-trigger="change" hx-swap="none">
+        {{if .Overridden}}<button type="button" class="icon-btn" title="Remove override" hx-put="/config/override/{{.BSYear}}" hx-vals='{"value": ""}' hx-swap="none">✕</button>{{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+
+{{define "force-panel"}}
+<section id="force-panel" class="card space-y-5">
+  <div>
+    <h1 class="font-title text-xl">Force a state</h1>
+    <p class="help">See any page without waiting for the date.</p>
+  </div>
+  <div>
+    <p class="label">Only on this device</p>
+    <div class="mt-2 flex flex-wrap gap-2">
+      {{range $s := states}}
+      {{$on := or (and (eq $s "auto") (eq $.ForceMe "")) (eq $s $.ForceMe)}}
+      <button type="button" hx-post="/config/force" hx-vals='{"scope": "me", "state": "{{$s}}"}' hx-target="#force-panel" hx-swap="outerHTML"
+              class="rounded-full px-3.5 py-2 text-sm font-semibold {{if $on}}bg-ear text-cream{{else}}bg-cream ring-1 ring-cheek{{end}}">{{stateEmoji $s}} {{stateName $s}}</button>
+      {{end}}
+    </div>
+    <p class="help mt-2">Saved in a cookie on this device while you're logged in. She still sees the real page.{{if .ForceMe}} <b>Right now this device sees “{{stateName .ForceMe}}”.</b>{{end}}</p>
+  </div>
+  <div class="rounded-2xl border-2 border-dashed border-rose/60 p-4">
+    <p class="label !text-rose">For everyone, her too ⚠️</p>
+    <div class="mt-2 flex flex-wrap gap-2">
+      {{range $s := states}}
+      {{$on := or (and (eq $s "auto") (eq $.C.ForceState "")) (eq $s $.C.ForceState)}}
+      <button type="button" hx-post="/config/force" hx-vals='{"scope": "everyone", "state": "{{$s}}"}' hx-target="#force-panel" hx-swap="outerHTML"
+              {{if ne $s "auto"}}hx-confirm="Show the “{{stateName $s}}” page to everyone, her included?"{{end}}
+              class="rounded-full px-3.5 py-2 text-sm font-semibold {{if $on}}bg-rose text-white{{else}}bg-cream ring-1 ring-cheek{{end}}">{{stateEmoji $s}} {{stateName $s}}</button>
+      {{end}}
+    </div>
+    <p class="help mt-2">Use it to show her a page early, or to keep the birthday page up a bit longer. Leave it on <b>Auto</b> otherwise.</p>
+  </div>
+</section>
+{{end}}
+
+
+{{define "list"}}
+<div id="list-{{domid .Def.Key}}" class="rounded-2xl bg-cream p-3 ring-1 ring-cheek/40">
+  <div class="flex flex-wrap items-baseline gap-2">
+    <span class="label">{{.Def.Label}}</span>
+    {{if eq .Def.Stage "during"}}<span class="chip bg-blush">🔒 surprise</span>{{end}}
+    {{if .Def.Min}}<span class="chip {{if lt (len .Items) .Def.Min}}bg-rose text-white{{else}}bg-white{{end}}">min {{.Def.Min}}</span>{{end}}
+    <span class="ml-auto text-xs text-cocoa">{{len .Items}} items</span>
+  </div>
+  {{if .Def.Help}}<p class="help">{{.Def.Help}}</p>{{end}}
+  <ol class="mt-2 space-y-2">
+    {{range $i, $item := .Items}}
+    <li class="flex items-start gap-1.5">
+      <span class="mt-2.5 w-5 shrink-0 text-right text-xs text-cocoa/70">{{add $i 1}}</span>
+      <textarea class="field auto-grow !mt-0 min-w-0 flex-1" rows="1" name="value" aria-label="{{$.Def.Label}} {{add $i 1}}"
+                hx-put="/config/list/{{$.Def.Key}}/{{$i}}" hx-trigger="input changed delay:800ms" hx-swap="none">{{$item}}</textarea>
+      <div class="flex shrink-0 gap-1 pt-1">
+        <button type="button" class="icon-btn disabled:opacity-30" title="Move up" {{if eq $i 0}}disabled{{end}}
+                hx-post="/config/list/{{$.Def.Key}}/{{$i}}/move" hx-vals='{"dir": "up"}' hx-target="#list-{{domid $.Def.Key}}" hx-swap="outerHTML">↑</button>
+        <button type="button" class="icon-btn disabled:opacity-30" title="Move down" {{if eq (add $i 1) (len $.Items)}}disabled{{end}}
+                hx-post="/config/list/{{$.Def.Key}}/{{$i}}/move" hx-vals='{"dir": "down"}' hx-target="#list-{{domid $.Def.Key}}" hx-swap="outerHTML">↓</button>
+        <button type="button" class="icon-btn text-rose" title="Delete"
+                hx-delete="/config/list/{{$.Def.Key}}/{{$i}}" hx-target="#list-{{domid $.Def.Key}}" hx-swap="outerHTML">✕</button>
+      </div>
+    </li>
+    {{end}}
+  </ol>
+  <form class="mt-2 flex gap-2" hx-post="/config/list/{{.Def.Key}}" hx-target="#list-{{domid .Def.Key}}" hx-swap="outerHTML">
+    <input class="field !mt-0 min-w-0 flex-1" name="value" placeholder="Add one…" aria-label="Add to {{.Def.Label}}">
+    <button class="btn-ghost shrink-0">+ Add</button>
+  </form>
+</div>
+{{end}}
+
+
+{{define "milestones"}}
+<div id="milestones" class="rounded-2xl bg-cream p-3 ring-1 ring-cheek/40">
+  <span class="label">Hug milestones</span>
+  <p class="help">When the hug counter reaches a number, the bear says the message and the meter levels up.</p>
+  <div class="mt-2 space-y-2">
+    {{range $i, $m := .C.Milestones}}
+    <form class="flex items-center gap-1.5" hx-put="/config/milestones/{{$i}}" hx-trigger="change" hx-target="#milestones" hx-swap="outerHTML">
+      <input type="number" name="count" value="{{$m.Count}}" min="1" class="field !mt-0 !w-20 shrink-0" aria-label="Hugs">
+      <input name="text" value="{{$m.Text}}" class="field !mt-0 min-w-0 flex-1" aria-label="Message">
+      <button type="button" class="icon-btn text-rose" title="Delete" hx-delete="/config/milestones/{{$i}}" hx-target="#milestones" hx-swap="outerHTML">✕</button>
+    </form>
+    {{end}}
+  </div>
+  <form class="mt-2 flex items-center gap-1.5" hx-post="/config/milestones" hx-target="#milestones" hx-swap="outerHTML">
+    <input type="number" name="count" min="1" placeholder="2000" class="field !mt-0 !w-20 shrink-0" aria-label="New milestone hugs">
+    <input name="text" placeholder="Message…" class="field !mt-0 min-w-0 flex-1" aria-label="New milestone message">
+    <button class="btn-ghost shrink-0">+ Add</button>
+  </form>
+</div>
+{{end}}
+
+
+{{define "photos-grid"}}
+<section id="photos" class="card">
+  <h2 class="font-title text-xl">Polaroid wall <span class="text-base text-cocoa">({{len .C.Photos}})</span></h2>
+  {{if .Flash}}<p class="mt-2 rounded-2xl bg-mint/60 p-2 text-sm font-semibold">{{.Flash}}</p>{{end}}
+  {{range .PhotoErrs}}<p class="mt-2 text-sm font-semibold text-rose">⚠️ {{.}}</p>{{end}}
+  {{if not .C.Photos}}<p class="help mt-2">No photos yet. The wall and the birthday slideshow stay hidden until you add some.</p>{{end}}
+  <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+    {{range $i, $p := .C.Photos}}
+    <div class="rounded-sm bg-white p-2 pb-3 shadow-md ring-1 ring-black/5 {{if eq (mod $i 2) 0}}-rotate-1{{else}}rotate-1{{end}}">
+      <img src="/photos/{{$p.ID}}" alt="" loading="lazy" class="aspect-square w-full bg-blush object-cover">
+      <input class="field !mt-2 !px-2 !py-1.5 text-sm" name="value" value="{{$p.Caption}}" placeholder="Caption…" aria-label="Caption"
+             hx-put="/config/photos/{{$p.ID}}" hx-trigger="input changed delay:800ms" hx-swap="none">
+      <div class="mt-2 flex justify-center gap-1.5">
+        <button type="button" class="icon-btn disabled:opacity-30" title="Move earlier" {{if eq $i 0}}disabled{{end}} hx-post="/config/photos/{{$p.ID}}/move" hx-vals='{"dir": "up"}' hx-target="#photos" hx-swap="outerHTML">←</button>
+        <button type="button" class="icon-btn disabled:opacity-30" title="Move later" {{if eq (add $i 1) (len $.C.Photos)}}disabled{{end}} hx-post="/config/photos/{{$p.ID}}/move" hx-vals='{"dir": "down"}' hx-target="#photos" hx-swap="outerHTML">→</button>
+        <button type="button" class="icon-btn text-rose" title="Delete" hx-delete="/config/photos/{{$p.ID}}" hx-confirm="Delete this photo?" hx-target="#photos" hx-swap="outerHTML">✕</button>
+      </div>
+    </div>
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+
+{{define "stats-panel"}}
+<div id="stats-panel" class="space-y-6">
+  <section class="card">
+    <h1 class="font-title text-xl">Her numbers 📊</h1>
+    <p class="help">Last visit: <b>{{since .Stats.LastVisit .Now}}</b>. Your own clicks while logged in aren't counted.</p>
+    <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {{range .StatRows}}
+      <div class="rounded-2xl bg-cream p-3"><div class="text-2xl font-semibold">{{.Value}}</div><div class="text-xs text-cocoa">{{.Label}}</div></div>
+      {{end}}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="font-title text-xl">Her wishes 🏮</h2>
+    {{if not .Stats.Wishes}}<p class="help mt-1">None yet. She can send one on her birthday.</p>{{end}}
+    <ul class="mt-3 space-y-2">
+      {{range .Stats.Wishes}}
+      <li class="rounded-2xl bg-blush/60 p-3">
+        <p class="whitespace-pre-line">“{{.Text}}”</p>
+        <p class="mt-1 text-xs text-cocoa">{{.BSYear}} BS · {{(inLoc .At $.Loc).Format "Jan 2, 15:04"}}{{if .Test}} · <b>your test</b>{{end}}</p>
+      </li>
+      {{end}}
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2 class="font-title text-xl">Birthday reviews ⭐</h2>
+    {{if not .Stats.Ratings}}<p class="help mt-1">None yet. She can rate it during the teasing week.</p>{{end}}
+    <ul class="mt-3 space-y-2">
+      {{range .Stats.Ratings}}
+      <li class="rounded-2xl bg-cream p-3">
+        <p class="text-lg text-rose">{{stars .Stars}}</p>
+        {{if .Review}}<p class="whitespace-pre-line">“{{.Review}}”</p>{{end}}
+        <p class="mt-1 text-xs text-cocoa">{{.BSYear}} BS · {{(inLoc .At $.Loc).Format "Jan 2, 15:04"}}{{if .Test}} · <b>your test</b>{{end}}</p>
+      </li>
+      {{end}}
+    </ul>
+  </section>
+
+  <section class="card flex flex-wrap items-center gap-3">
+    <p class="flex-1 text-sm">Start fresh, e.g. after testing. This clears all numbers, wishes and reviews.</p>
+    <button type="button" class="btn-ghost !border-rose text-rose" hx-post="/config/stats/reset" hx-confirm="Clear all stats, wishes and reviews?" hx-target="#stats-panel" hx-swap="outerHTML">Reset stats</button>
+  </section>
+</div>
+{{end}}
+
+
+{{define "date-preview"}}
+<div id="date-preview" class="rounded-2xl bg-blush/60 p-3 text-sm">
+  <p class="font-semibold">That lands on:</p>
+  <ul class="mt-1 space-y-0.5">
+    {{range .Dates}}<li>{{.Label}} → <b>{{.Date}}</b>{{if .Estimated}} (estimated){{end}}</li>{{end}}
+  </ul>
+</div>
+{{end}}
