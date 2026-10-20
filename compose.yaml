@@ -31,14 +31,14 @@ services:
       traefik.http.services.ebubday.loadbalancer.server.port: "8080"
 
       # The site itself: public
-      traefik.http.routers.ebubday.rule: Host(`eby-bday.rndhkl.com`)
+      traefik.http.routers.ebubday.rule: Host(`ebu-bday.rndhkl.com`)
       traefik.http.routers.ebubday.entrypoints: websecure
       traefik.http.routers.ebubday.tls: "true"
       traefik.http.routers.ebubday.tls.certresolver: cloudflare
       traefik.http.routers.ebubday.service: ebubday
 
       # /config: behind Authelia
-      traefik.http.routers.ebubday-config.rule: Host(`eby-bday.rndhkl.com`) && PathPrefix(`/config`)
+      traefik.http.routers.ebubday-config.rule: Host(`ebu-bday.rndhkl.com`) && PathPrefix(`/config`)
       traefik.http.routers.ebubday-config.priority: "100"
       traefik.http.routers.ebubday-config.entrypoints: websecure
       traefik.http.routers.ebubday-config.tls: "true"
